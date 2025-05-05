@@ -1,0 +1,4 @@
+[project]
+name = "vulnerable_webapp"
+readme = "README.md"
+readme_type = "markdown"

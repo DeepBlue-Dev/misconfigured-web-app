@@ -1,5 +1,5 @@
-from typing import Callable, Any
-from flask import Flask, Response, url_for, make_response
+from typing import Callable, Any, List
+from flask import Flask, Response, render_template, url_for, make_response
 from functools import wraps
 
 # https://pypi.org/project/flask-talisman/
@@ -29,23 +29,22 @@ def with_security_headers(**headers) -> Callable[[Callable[..., Any]], Callable[
 @app.route('/')
 def main():
     # From: https://bobbyhadz.com/blog/get-list-of-all-routes-defined-in-flask-application
-    routes = []
+    routes: List[Any] = []
 
     for rule in app.url_map.iter_rules():
         # Exclude rules that require parameters and rules you can't open in a browser
         if rule.methods is not None and "GET" in rule.methods and has_no_empty_params(rule):
-            url = url_for(rule.endpoint, **(rule.defaults or {}))
-            routes.append((url, rule.endpoint))
-
-    print(routes)
-    return routes
+            url: str = url_for(rule.endpoint, **(rule.defaults or {}))
+            routes.append(url)
+    print("\n".join(map(lambda url: f"http://localhost:5000{url}", routes)))
+    return render_template(template_name_or_list="main.j2", routes=routes)
 
 # X-Content-Type-Options
 
 @app.route("/x_content_type_options_header_value_is_not_nosniff")
 @with_security_headers(**{
     "X-Content-Type-Options": "-1",
-    "Content-Security-Policy": "default-src 'self'",
+    "Content-Security-Policy": "default-src 'self' object-src 'none'",
     "X-Frame-Options": "DENY",
 })
 def x_content_type_options_header_value_is_not_nosniff() -> str:
@@ -53,7 +52,7 @@ def x_content_type_options_header_value_is_not_nosniff() -> str:
 
 @app.route("/x_content_type_options_header_is_missing")
 @with_security_headers(**{
-    "Content-Security-Policy": "default-src 'self'",
+    "Content-Security-Policy": "default-src 'self' object-src 'none'",
     "X-Frame-Options": "DENY",
 })
 def x_content_type_options_header_is_missing() -> str:
@@ -66,7 +65,7 @@ def x_content_type_options_header_is_missing() -> str:
 @app.route("/x_frame_options_is_set_to_deny")
 @with_security_headers(**{
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'self'",
+    "Content-Security-Policy": "default-src 'self' object-src 'none'",
     "X-Frame-Options": "DENY",
 })
 def x_frame_options_is_set_to_deny() -> str:
@@ -76,7 +75,7 @@ def x_frame_options_is_set_to_deny() -> str:
 @app.route("/x_frame_options_is_set_to_sameorigin")
 @with_security_headers(**{
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'self'",
+    "Content-Security-Policy": "default-src 'self' object-src 'none'",
     "X-Frame-Options": "SAMEORIGIN",
 })
 def x_frame_options_is_set_to_sameorigin() -> str:
@@ -86,13 +85,51 @@ def x_frame_options_is_set_to_sameorigin() -> str:
 @app.route("/x_frame_options_is_not_set")
 @with_security_headers(**{
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "default-src 'self'",
+    "Content-Security-Policy": "default-src 'self' object-src 'none'",
 })
 def x_frame_options_is_not_set() -> str:
     return "x_frame_options_is_not_set"
 
+# Content-Security-Policy
 
+# csp_header_script_src_unsafe_inline
+@app.route("/csp_header_script_src_unsafe_inline")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; object-src 'none'",
+    "X-Frame-Options": "DENY",
+})
+def csp_header_script_src_unsafe_inline() -> str:
+    return "csp_header_script_src_unsafe_inline"
 
+# csp_header_script_src_unsafe_eval
+@app.route("/csp_header_script_src_unsafe_eval")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-eval'; object-src 'none'",
+    "X-Frame-Options": "DENY",
+})
+def csp_header_script_src_unsafe_eval() -> str:
+    return "csp_header_script_src_unsafe_eval"
+
+# csp_header_object_source_not_none
+@app.route("/csp_header_object_source_not_none")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'; object-src 'https://www.google.com'", # Google is a JSONP enpoint
+    "X-Frame-Options": "DENY",
+})
+def csp_header_object_source_not_none() -> str:
+    return "csp_header_object_source_not_none"
+
+# csp_header_is_not_set
+@app.route("/csp_header_is_not_set")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+})
+def csp_header_is_not_set() -> str:
+    return "csp_header_is_not_set"
 
 if __name__ == '__main__':
     app.run(debug=True)
