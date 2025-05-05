@@ -40,5 +40,59 @@ def main():
     print(routes)
     return routes
 
+# X-Content-Type-Options
+
+@app.route("/x_content_type_options_header_value_is_not_nosniff")
+@with_security_headers(**{
+    "X-Content-Type-Options": "-1",
+    "Content-Security-Policy": "default-src 'self'",
+    "X-Frame-Options": "DENY",
+})
+def x_content_type_options_header_value_is_not_nosniff() -> str:
+    return "x_content_type_options_header_value_is_not_nosniff"
+
+@app.route("/x_content_type_options_header_is_missing")
+@with_security_headers(**{
+    "Content-Security-Policy": "default-src 'self'",
+    "X-Frame-Options": "DENY",
+})
+def x_content_type_options_header_is_missing() -> str:
+    return "x_content_type_options_header_is_missing"
+
+# X-Frame-Options
+
+# Set to DENY
+# Not a valid slug/finding, this route is used to check for false positives
+@app.route("/x_frame_options_is_set_to_deny")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'",
+    "X-Frame-Options": "DENY",
+})
+def x_frame_options_is_set_to_deny() -> str:
+    return "x_frame_options_is_set_to_deny"
+
+# Set to SAMEORIGIN
+@app.route("/x_frame_options_is_set_to_sameorigin")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'",
+    "X-Frame-Options": "SAMEORIGIN",
+})
+def x_frame_options_is_set_to_sameorigin() -> str:
+    return "x_frame_options_is_set_to_sameorigin"
+
+# Not set
+@app.route("/x_frame_options_is_not_set")
+@with_security_headers(**{
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'self'",
+})
+def x_frame_options_is_not_set() -> str:
+    return "x_frame_options_is_not_set"
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
